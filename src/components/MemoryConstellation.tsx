@@ -46,13 +46,14 @@ export default function MemoryConstellation({
 
     if (pos.type === 'video') {
       if (video) {
-        srcUrl = URL.createObjectURL(video.blob);
+        srcUrl = video.blob ? URL.createObjectURL(video.blob) : (video.path || '/videos/birthday-film.mp4');
       } else {
         srcUrl = '/videos/birthday-film.mp4';
       }
     } else if (photos.length > 0) {
       const idx = (pos.id - 1) % photos.length;
-      srcUrl = URL.createObjectURL(photos[idx].blob);
+      const photo = photos[idx];
+      srcUrl = photo.blob ? URL.createObjectURL(photo.blob) : (photo.path || '');
     }
 
     setActiveNode({

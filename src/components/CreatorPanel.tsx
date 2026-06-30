@@ -3,6 +3,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Trash2, ArrowUp, ArrowDown, Download, RotateCcw, Save, Settings, FileText, Image as ImageIcon, Film, Music, Globe } from 'lucide-react';
+import JSZip from 'jszip';
 import { PhotoEntry, MediaEntry, TextConfig, savePhoto, deletePhoto, saveVideo, deleteVideo, saveMusic, deleteMusic, saveTextConfig, resetDB } from '@/utils/db';
 
 interface CreatorPanelProps {
@@ -48,18 +49,20 @@ export default function CreatorPanel({
     try {
       const photoPayloads = [];
       for (const p of photos) {
-        const base64 = await blobToBase64(p.blob);
-        photoPayloads.push({ id: p.id, name: p.name, data: base64, order: p.order });
+        if (p.blob) {
+          const base64 = await blobToBase64(p.blob);
+          photoPayloads.push({ id: p.id, name: p.name, data: base64, order: p.order });
+        }
       }
 
       let videoPayload = null;
-      if (video) {
+      if (video && video.blob) {
         const base64 = await blobToBase64(video.blob);
         videoPayload = { name: video.name, data: base64 };
       }
 
       let musicPayload = null;
-      if (music) {
+      if (music && music.blob) {
         const base64 = await blobToBase64(music.blob);
         musicPayload = { name: music.name, data: base64 };
       }
@@ -152,8 +155,8 @@ export default function CreatorPanel({
     const target = photos[targetIdx];
 
     // Swap order values in IndexedDB
-    await savePhoto(current.id, current.name, current.blob, target.order);
-    await savePhoto(target.id, target.name, target.blob, current.order);
+    await savePhoto(current.id, current.name, current.blob!, target.order);
+    await savePhoto(target.id, target.name, target.blob!, current.order);
 
     onRefreshData();
   };
@@ -231,46 +234,121 @@ export default function CreatorPanel({
     onTextChange(newConfig);
   };
 
+  // Helper to determine file extension
+  const getFileExtension = (filename: string, mimeType: string): string => {
+    if (filename && filename.includes('.')) {
+      const ext = filename.split('.').pop()?.toLowerCase();
+      if (ext) return ext;
+    }
+    let ext = mimeType.split('/')[1] || '';
+    if (ext === 'quicktime') return 'mov';
+    if (ext === 'mpeg') return 'mp3';
+    if (ext === 'x-wav') return 'wav';
+    if (ext === 'x-m4a' || ext === 'mp4') return 'm4a';
+    return ext || 'bin';
+  };
+
+  // Helper to get mime type from extension
+  const getMimeTypeFromExtension = (ext: string): string => {
+    const lower = ext.toLowerCase();
+    switch (lower) {
+      case 'jpg':
+      case 'jpeg':
+        return 'image/jpeg';
+      case 'png':
+        return 'image/png';
+      case 'webp':
+        return 'image/webp';
+      case 'mp4':
+        return 'video/mp4';
+      case 'mov':
+        return 'video/quicktime';
+      case 'mp3':
+        return 'audio/mpeg';
+      case 'wav':
+        return 'audio/wav';
+      case 'm4a':
+        return 'audio/mp4';
+      case 'aac':
+        return 'audio/aac';
+      case 'ogg':
+        return 'audio/ogg';
+      default:
+        return 'application/octet-stream';
+    }
+  };
+
   // ---------------- BACKUP EXPORT & IMPORT ----------------
 
   const handleExportBackup = async () => {
-    triggerLog('Packaging backup JSON...');
+    triggerLog('Packaging backup ZIP...');
     try {
-      const photoBackups = [];
+      const zip = new JSZip();
+
+      // Collect photos
+      const savedPhotos = [];
       for (const p of photos) {
-        const base64 = await blobToBase64(p.blob);
-        photoBackups.push({ id: p.id, name: p.name, data: base64, order: p.order });
+        if (p.blob) {
+          const ext = getFileExtension(p.name, p.blob.type) || 'jpg';
+          const filename = `photo_${p.id}.${ext}`;
+          zip.file(`public/content/photos/${filename}`, p.blob);
+          savedPhotos.push({
+            id: p.id,
+            name: p.name,
+            path: `/content/photos/${filename}`,
+            order: p.order,
+          });
+        }
       }
 
-      let videoBase64 = '';
-      if (video) {
-        videoBase64 = await blobToBase64(video.blob);
+      // Collect video
+      let savedVideo = null;
+      if (video && video.blob) {
+        const ext = getFileExtension(video.name, video.blob.type) || 'mp4';
+        const filename = `birthday-film.${ext}`;
+        zip.file(`public/content/videos/${filename}`, video.blob);
+        savedVideo = {
+          name: video.name,
+          path: `/content/videos/${filename}`,
+        };
       }
 
-      let musicBase64 = '';
-      if (music) {
-        musicBase64 = await blobToBase64(music.blob);
+      // Collect music
+      let savedMusic = null;
+      if (music && music.blob) {
+        const ext = getFileExtension(music.name, music.blob.type) || 'mp3';
+        const filename = `theme.${ext}`;
+        zip.file(`public/content/music/${filename}`, music.blob);
+        savedMusic = {
+          name: music.name,
+          path: `/content/music/${filename}`,
+        };
       }
 
-      const backupObject = {
+      // Collect settings and textConfig
+      const publishedPayload = {
         textConfig,
-        photos: photoBackups,
-        video: video ? { name: video.name, data: videoBase64 } : null,
-        music: music ? { name: music.name, data: musicBase64 } : null,
+        photos: savedPhotos,
+        video: savedVideo,
+        music: savedMusic,
+        lastUpdated: new Date().toISOString(),
       };
 
-      const jsonStr = JSON.stringify(backupObject);
-      const blob = new Blob([jsonStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
+      zip.file('public/content/content.json', JSON.stringify(publishedPayload, null, 2));
+
+      // Generate zip
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
       
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'memory-box-universe.json';
+      link.download = 'memory-box-universe.zip';
       link.click();
       
-      triggerLog('Backup file downloaded.');
+      URL.revokeObjectURL(url);
+      triggerLog('Universe ZIP exported!');
     } catch (e) {
-      alert('Failed to package backup JSON.');
+      alert('Failed to package backup ZIP.');
       console.error(e);
     }
   };
@@ -279,47 +357,83 @@ export default function CreatorPanel({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    triggerLog('Importing backup package...');
+    triggerLog('Importing universe ZIP...');
     try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const data = JSON.parse(event.target?.result as string);
-        
-        // Reset DB first
-        await resetDB();
+      const zip = new JSZip();
+      const loadedZip = await zip.loadAsync(file);
 
-        // 1. Text
-        if (data.textConfig) {
-          await saveTextConfig(data.textConfig);
-        }
+      // Helper to find file inside loaded ZIP flexibly
+      const findFileInZip = (pathSuffix: string) => {
+        const normalized = pathSuffix.replace(/^\//, ''); // remove leading slash
+        return Object.keys(loadedZip.files).find(key => key.endsWith(normalized));
+      };
 
-        // 2. Photos
-        if (data.photos && Array.isArray(data.photos)) {
-          for (const p of data.photos) {
-            const blob = base64ToBlob(p.data);
-            await savePhoto(p.id, p.name, blob, p.order);
+      // 1. Read public/content/content.json
+      const configKey = findFileInZip('content/content.json');
+      if (!configKey) {
+        throw new Error('Invalid backup ZIP: public/content/content.json not found.');
+      }
+
+      const contentJsonText = await loadedZip.files[configKey].async('text');
+      const payload = JSON.parse(contentJsonText);
+
+      // Reset DB first
+      await resetDB();
+
+      // 2. Restore Text Config
+      if (payload.textConfig) {
+        await saveTextConfig(payload.textConfig);
+      }
+
+      // 3. Restore Photos
+      if (payload.photos && Array.isArray(payload.photos)) {
+        for (const p of payload.photos) {
+          if (p.path) {
+            const fileKey = findFileInZip(p.path);
+            if (fileKey) {
+              const fileData = loadedZip.files[fileKey];
+              const ext = fileKey.split('.').pop() || '';
+              const mimeType = getMimeTypeFromExtension(ext);
+              const typedBlob = new Blob([await fileData.async('arraybuffer')], { type: mimeType });
+              await savePhoto(p.id, p.name, typedBlob, p.order);
+            }
           }
         }
+      }
 
-        // 3. Video
-        if (data.video) {
-          const blob = base64ToBlob(data.video.data);
-          await saveVideo(blob, data.video.name);
+      // 4. Restore Video
+      if (payload.video && payload.video.path) {
+        const fileKey = findFileInZip(payload.video.path);
+        if (fileKey) {
+          const fileData = loadedZip.files[fileKey];
+          const ext = fileKey.split('.').pop() || '';
+          const mimeType = getMimeTypeFromExtension(ext);
+          const typedBlob = new Blob([await fileData.async('arraybuffer')], { type: mimeType });
+          await saveVideo(typedBlob, payload.video.name);
         }
+      }
 
-        // 4. Music
-        if (data.music) {
-          const blob = base64ToBlob(data.music.data);
-          await saveMusic(blob, data.music.name);
+      // 5. Restore Music
+      if (payload.music && payload.music.path) {
+        const fileKey = findFileInZip(payload.music.path);
+        if (fileKey) {
+          const fileData = loadedZip.files[fileKey];
+          const ext = fileKey.split('.').pop() || '';
+          const mimeType = getMimeTypeFromExtension(ext);
+          const typedBlob = new Blob([await fileData.async('arraybuffer')], { type: mimeType });
+          await saveMusic(typedBlob, payload.music.name);
         }
+      }
 
-        triggerLog('Import completed! Refreshing universe...');
-        onRefreshData();
-      };
-      reader.readAsText(file);
-    } catch (e) {
-      alert('Failed to parse backup file.');
+      triggerLog('Import completed! Refreshing universe...');
+      onRefreshData();
+    } catch (e: any) {
+      alert('Failed to parse backup ZIP: ' + (e.message || e));
       console.error(e);
+    } finally {
+      if (e.target) {
+        e.target.value = '';
+      }
     }
   };
 
@@ -631,7 +745,7 @@ export default function CreatorPanel({
                 ) : (
                   <Globe className="w-4 h-4 text-dusty-plum" />
                 )}
-                <span>Publish My Universe</span>
+                <span>Publish Universe</span>
               </button>
 
               {lastUpdated && (
@@ -648,7 +762,7 @@ export default function CreatorPanel({
                 className="w-full py-3 bg-sakura hover:bg-sakura/80 text-dream-pink text-xs uppercase tracking-widest font-bold rounded-2xl border border-sakura/50 cursor-pointer flex items-center justify-center gap-2"
               >
                 <Download className="w-4 h-4" />
-                <span>Export Universe JSON</span>
+                <span>Export Universe</span>
               </button>
 
               {/* Import Button */}
@@ -657,12 +771,12 @@ export default function CreatorPanel({
                 className="w-full py-3 bg-cloud-pink/10 hover:bg-cloud-pink/20 text-dusty-plum text-xs uppercase tracking-widest font-bold rounded-2xl border border-sakura/30 cursor-pointer flex items-center justify-center gap-2"
               >
                 <Upload className="w-4 h-4 text-sakura" style={{ color: '#FFB6D5' }} />
-                <span>Import Universe JSON</span>
+                <span>Import Universe</span>
               </button>
               <input
                 ref={importInputRef}
                 type="file"
-                accept=".json"
+                accept=".zip"
                 onChange={handleImportBackup}
                 className="hidden"
               />

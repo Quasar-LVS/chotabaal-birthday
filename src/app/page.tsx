@@ -31,14 +31,28 @@ export default function Home() {
   const [entered, setEntered] = useState(false);
   const [activeSection, setActiveSection] = useState('hero');
 
-  // Database States
-  const [textConfig, setTextConfig] = useState<TextConfig>(DEFAULT_TEXT_CONFIG);
-  const [photos, setPhotos] = useState<PhotoEntry[]>([]);
-  const [video, setVideo] = useState<MediaEntry | null>(null);
-  const [music, setMusic] = useState<MediaEntry | null>(null);
+  // Database States (Draft)
+  const [localTextConfig, setLocalTextConfig] = useState<TextConfig>(DEFAULT_TEXT_CONFIG);
+  const [localPhotos, setLocalPhotos] = useState<PhotoEntry[]>([]);
+  const [localVideo, setLocalVideo] = useState<MediaEntry | null>(null);
+  const [localMusic, setLocalMusic] = useState<MediaEntry | null>(null);
+
+  // Published States (Server)
+  const [publishedTextConfig, setPublishedTextConfig] = useState<TextConfig>(DEFAULT_TEXT_CONFIG);
+  const [publishedPhotos, setPublishedPhotos] = useState<any[]>([]);
+  const [publishedVideo, setPublishedVideo] = useState<any | null>(null);
+  const [publishedMusic, setPublishedMusic] = useState<any | null>(null);
+  const [hasPublishedData, setHasPublishedData] = useState<boolean>(false);
+
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isDbLoading, setIsDbLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
+
+  // Active States used for rendering (viewer sees published, creator sees local draft)
+  const activeTextConfig = (editMode || !hasPublishedData) ? localTextConfig : publishedTextConfig;
+  const activePhotos = (editMode || !hasPublishedData) ? localPhotos : publishedPhotos;
+  const activeVideo = (editMode || !hasPublishedData) ? localVideo : publishedVideo;
+  const activeMusic = (editMode || !hasPublishedData) ? localMusic : publishedMusic;
 
   // Load backend published universe data and IndexedDB contents
   const loadUniverseData = async () => {
@@ -48,16 +62,22 @@ export default function Home() {
         .then((r) => r.json())
         .catch(() => ({ success: false }));
 
-      const localPhotos = await getPhotos();
-      const localConfig = await getTextConfig();
-      const localVideo = await getVideo();
-      const localMusic = await getMusic();
+      let currentLocalPhotos = await getPhotos();
+      let currentLocalConfig = await getTextConfig();
+      let currentLocalVideo = await getVideo();
+      let currentLocalMusic = await getMusic();
 
       if (serverRes.success) {
         setLastUpdated(serverRes.lastUpdated);
+        setHasPublishedData(true);
+
+        setPublishedTextConfig(serverRes.textConfig || DEFAULT_TEXT_CONFIG);
+        setPublishedPhotos(serverRes.photos || []);
+        setPublishedVideo(serverRes.video || null);
+        setPublishedMusic(serverRes.music || null);
 
         // If local IndexedDB has no custom elements yet, sync server published items into IndexedDB
-        if (localPhotos.length === 0 && !localVideo && !localMusic) {
+        if (currentLocalPhotos.length === 0 && !currentLocalVideo && !currentLocalMusic) {
           console.log('Syncing server published assets into IndexedDB...');
           // Save Text config
           await saveTextConfig(serverRes.textConfig);
@@ -92,29 +112,19 @@ export default function Home() {
           }
 
           // Reload states after sync
-          const syncedPhotos = await getPhotos();
-          const syncedConfig = await getTextConfig();
-          const syncedVideo = await getVideo();
-          const syncedMusic = await getMusic();
-
-          setTextConfig(syncedConfig);
-          setPhotos(syncedPhotos);
-          setVideo(syncedVideo);
-          setMusic(syncedMusic);
-        } else {
-          // IndexedDB has local data, keep using local draft workspace
-          setTextConfig(localConfig);
-          setPhotos(localPhotos);
-          setVideo(localVideo);
-          setMusic(localMusic);
+          currentLocalPhotos = await getPhotos();
+          currentLocalConfig = await getTextConfig();
+          currentLocalVideo = await getVideo();
+          currentLocalMusic = await getMusic();
         }
       } else {
-        // No server configuration yet, use standard local workspace
-        setTextConfig(localConfig);
-        setPhotos(localPhotos);
-        setVideo(localVideo);
-        setMusic(localMusic);
+        setHasPublishedData(false);
       }
+
+      setLocalTextConfig(currentLocalConfig);
+      setLocalPhotos(currentLocalPhotos);
+      setLocalVideo(currentLocalVideo);
+      setLocalMusic(currentLocalMusic);
     } catch (e) {
       console.error('Failed to initialize state configs:', e);
     } finally {
@@ -139,15 +149,15 @@ export default function Home() {
 
   // Inline changes handler
   const handleInlineTextChange = async (key: string, val: string) => {
-    const newConfig = { ...textConfig };
+    const newConfig = { ...localTextConfig };
     (newConfig as any)[key] = val;
-    setTextConfig(newConfig);
+    setLocalTextConfig(newConfig);
     await saveTextConfig(newConfig);
   };
 
   // Direct config setter
   const handleTextConfigSave = async (newConfig: TextConfig) => {
-    setTextConfig(newConfig);
+    setLocalTextConfig(newConfig);
     await saveTextConfig(newConfig);
   };
 
@@ -208,7 +218,7 @@ export default function Home() {
           >
             <EntryScreen 
               onEnter={handleEnter} 
-              textConfig={textConfig}
+              textConfig={activeTextConfig}
               isEditMode={editMode}
               onTextChange={handleInlineTextChange}
             />
@@ -222,16 +232,16 @@ export default function Home() {
             className="w-full flex flex-col relative"
           >
             {/* Persistent Audio soundtrack player */}
-            <PersistentMusicPlayer isActive={entered} music={music} />
+            <PersistentMusicPlayer isActive={entered} music={activeMusic} />
 
             {/* Creator Mode panel drawer */}
             <AnimatePresence>
               {editMode && (
                 <CreatorPanel
-                  textConfig={textConfig}
-                  photos={photos}
-                  video={video}
-                  music={music}
+                  textConfig={localTextConfig}
+                  photos={localPhotos}
+                  video={localVideo}
+                  music={localMusic}
                   lastUpdated={lastUpdated}
                   onRefreshData={loadUniverseData}
                   onClose={() => setEditMode(false)}
@@ -263,7 +273,7 @@ export default function Home() {
                     }`}
                     style={{ color: activeSection === sec.id ? '#E8B7C8' : '' }}
                   >
-                    {textConfig.navigation[sec.key]}
+                    {activeTextConfig.navigation[sec.key]}
                   </button>
                 ))}
               </div>
@@ -271,7 +281,7 @@ export default function Home() {
               {/* Mobile details tag */}
               <div className="md:hidden flex items-center gap-1 text-[9px] uppercase tracking-widest font-semibold" style={{ color: '#E8B7C8' }}>
                 <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                <span>{textConfig.navigation[SECTIONS.find(s => s.id === activeSection)?.key || 'hero']}</span>
+                <span>{activeTextConfig.navigation[SECTIONS.find(s => s.id === activeSection)?.key || 'hero']}</span>
               </div>
             </header>
 
@@ -279,7 +289,7 @@ export default function Home() {
             <nav className="fixed right-6 top-1/2 -translate-y-1/2 z-40 hidden md:flex flex-col gap-6 bg-cloud-pink/30 backdrop-blur-xs p-3 rounded-full border border-sakura/30 shadow-xs">
               {SECTIONS.map((sec) => {
                 const isActive = activeSection === sec.id;
-                const label = textConfig.navigation[sec.key];
+                const label = activeTextConfig.navigation[sec.key];
                 return (
                   <button
                     key={sec.id}
@@ -318,7 +328,7 @@ export default function Home() {
               
               <section id="hero" className="border-b border-sakura/10">
                 <HeroSection 
-                  textConfig={textConfig} 
+                  textConfig={activeTextConfig} 
                   isEditMode={editMode} 
                   onTextChange={handleTextConfigSave} 
                 />
@@ -326,35 +336,35 @@ export default function Home() {
 
               <section id="constellation" className="border-b border-sakura/10">
                 <MemoryConstellation 
-                  textConfig={textConfig} 
+                  textConfig={activeTextConfig} 
                   isEditMode={editMode} 
-                  photos={photos} 
-                  video={video} 
+                  photos={activePhotos} 
+                  video={activeVideo} 
                   onTextChange={handleTextConfigSave} 
                 />
               </section>
 
               <section id="scrapbook" className="border-b border-sakura/10">
                 <DreamGallery 
-                  textConfig={textConfig} 
+                  textConfig={activeTextConfig} 
                   isEditMode={editMode} 
-                  photos={photos} 
+                  photos={activePhotos} 
                   onTextChange={handleTextConfigSave} 
                 />
               </section>
 
               <section id="cinema" className="border-b border-sakura/10">
                 <CinemaRoom 
-                  textConfig={textConfig} 
+                  textConfig={activeTextConfig} 
                   isEditMode={editMode} 
-                  video={video} 
+                  video={activeVideo} 
                   onTextChange={handleTextConfigSave} 
                   onRefreshVideo={loadUniverseData}
                 />
               </section>
 
               <section id="final">
-                <FinalScreen photos={photos} />
+                <FinalScreen photos={activePhotos} />
               </section>
 
             </div>

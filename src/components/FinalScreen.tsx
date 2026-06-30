@@ -30,11 +30,15 @@ export default function FinalScreen({ photos }: FinalScreenProps) {
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
   useEffect(() => {
-    const urls = photos.map((p) => URL.createObjectURL(p.blob));
+    const urls = photos.map((p) => p.blob ? URL.createObjectURL(p.blob) : (p.path || ''));
     setPhotoUrls(urls);
 
     return () => {
-      urls.forEach((url) => URL.revokeObjectURL(url));
+      urls.forEach((url) => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
     };
   }, [photos]);
 

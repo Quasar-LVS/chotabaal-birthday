@@ -7,13 +7,15 @@ const DB_VERSION = 1;
 export interface PhotoEntry {
   id: string;
   name: string;
-  blob: Blob;
+  blob?: Blob;
+  path?: string;
   order: number;
 }
 
 export interface MediaEntry {
-  blob: Blob;
+  blob?: Blob;
   name: string;
+  path?: string;
 }
 
 export interface TextConfig {

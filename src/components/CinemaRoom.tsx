@@ -31,7 +31,7 @@ export default function CinemaRoom({
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [isImmersive, setIsImmersive] = useState(false);
-  const [videoUrl, setVideoUrl] = useState('/videos/birthday-film.mp4');
+  const [videoUrl, setVideoUrl] = useState('/content/videos/birthday-film.mp4');
 
   // Modal & Upload States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -41,9 +41,9 @@ export default function CinemaRoom({
 
   // Convert wishes video Blob to browser stream URL
   useEffect(() => {
-    let url = '/videos/birthday-film.mp4';
+    let url = '/content/videos/birthday-film.mp4';
     if (video) {
-      url = URL.createObjectURL(video.blob);
+      url = video.blob ? URL.createObjectURL(video.blob) : (video.path || '/content/videos/birthday-film.mp4');
     }
     setVideoUrl(url);
 

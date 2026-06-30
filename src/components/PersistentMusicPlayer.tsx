@@ -95,12 +95,12 @@ export default function PersistentMusicPlayer({ isActive, music }: PersistentMus
   useEffect(() => {
     if (!isActive) return;
 
-    let srcUrl = '/music/theme.mp3';
+    let srcUrl = '/content/music/theme.mp3';
     let isBlobUrl = false;
 
     if (music) {
-      srcUrl = URL.createObjectURL(music.blob);
-      isBlobUrl = true;
+      srcUrl = music.blob ? URL.createObjectURL(music.blob) : (music.path || '/content/music/theme.mp3');
+      isBlobUrl = !!music.blob;
       setUseSynthFallback(false);
     }
 
@@ -116,7 +116,7 @@ export default function PersistentMusicPlayer({ isActive, music }: PersistentMus
     
     const onError = () => {
       if (!isBlobUrl) {
-        console.warn("Theme file not found in /music/theme.mp3, starting synthesizer loop.");
+        console.warn("Theme file not found in /content/music/theme.mp3, starting synthesizer loop.");
         setUseSynthFallback(true);
         startSynth();
       }

@@ -1,0 +1,180 @@
+{
+  "textConfig": {
+    "title": "Magical Memory Box",
+    "enterButton": "Open Memory Box →",
+    "heroTitle": "Happy Birthday",
+    "heroSubtitle": "PIGLET",
+    "heroParagraphs": [
+      "Had yo lil ass with me throughout all goods and bads, wanted to shower u with all the specials this birthday!!\nI would want you to hold us for the rest of our life<3\nLove you for always babying me even when i was annoying af >_<\n-- ",
+      "LOVE YOU\nU DHA BHESTTTTT <3 "
+    ],
+    "sectionTitles": {
+      "hero": "Happy Birthday",
+      "constellation": "Imperfectly perfect US",
+      "gallery": "Dream Scrapbook",
+      "cinema": "The Cinema Room"
+    },
+    "navigation": {
+      "hero": "Home",
+      "constellation": "Constellation",
+      "gallery": "Scrapbook",
+      "cinema": "Cinema",
+      "final": "Forever"
+    }
+  },
+  "photos": [
+    {
+      "id": "photo_1782820457309_0tmf2fj",
+      "name": "WhatsApp Image 2026-06-30 at 5.18.16 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820457309_0tmf2fj.jpeg",
+      "order": 1
+    },
+    {
+      "id": "photo_1782820457337_28hmw1n",
+      "name": "WhatsApp Image 2026-06-30 at 5.18.14 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820457337_28hmw1n.jpeg",
+      "order": 2
+    },
+    {
+      "id": "photo_1782820457346_qo45wvj",
+      "name": "WhatsApp Image 2026-06-30 at 5.18.07 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820457346_qo45wvj.jpeg",
+      "order": 3
+    },
+    {
+      "id": "photo_1782820475156_xfurlvh",
+      "name": "WhatsApp Image 2026-06-30 at 5.22.17 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820475156_xfurlvh.jpeg",
+      "order": 4
+    },
+    {
+      "id": "photo_1782820525973_9kme2xw",
+      "name": "WhatsApp Image 2026-06-30 at 5.20.27 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820525973_9kme2xw.jpeg",
+      "order": 5
+    },
+    {
+      "id": "photo_1782820675045_mo29tkf",
+      "name": "WhatsApp Image 2026-06-30 at 5.22.14 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675045_mo29tkf.jpeg",
+      "order": 6
+    },
+    {
+      "id": "photo_1782820675064_a8ixux2",
+      "name": "WhatsApp Image 2026-06-30 at 5.22.12 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675064_a8ixux2.jpeg",
+      "order": 7
+    },
+    {
+      "id": "photo_1782820675078_urvk1tu",
+      "name": "WhatsApp Image 2026-06-30 at 5.22.06 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675078_urvk1tu.jpeg",
+      "order": 8
+    },
+    {
+      "id": "photo_1782820675085_lwm8x6i",
+      "name": "WhatsApp Image 2026-06-30 at 5.22.03 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675085_lwm8x6i.jpeg",
+      "order": 9
+    },
+    {
+      "id": "photo_1782820675091_3ztt3yc",
+      "name": "WhatsApp Image 2026-06-30 at 5.22.04 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675091_3ztt3yc.jpeg",
+      "order": 10
+    },
+    {
+      "id": "photo_1782820675098_0aykbl7",
+      "name": "WhatsApp Image 2026-06-30 at 5.22.01 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675098_0aykbl7.jpeg",
+      "order": 11
+    },
+    {
+      "id": "photo_1782820675105_bobg3o2",
+      "name": "WhatsApp Image 2026-06-30 at 5.21.57 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675105_bobg3o2.jpeg",
+      "order": 12
+    },
+    {
+      "id": "photo_1782820675113_7kw049l",
+      "name": "WhatsApp Image 2026-06-30 at 5.21.47 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675113_7kw049l.jpeg",
+      "order": 13
+    },
+    {
+      "id": "photo_1782820675121_gal2jfz",
+      "name": "WhatsApp Image 2026-06-30 at 5.21.53 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675121_gal2jfz.jpeg",
+      "order": 14
+    },
+    {
+      "id": "photo_1782820675131_yav7h0s",
+      "name": "WhatsApp Image 2026-06-30 at 5.21.51 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675131_yav7h0s.jpeg",
+      "order": 15
+    },
+    {
+      "id": "photo_1782820675139_hju1ru5",
+      "name": "WhatsApp Image 2026-06-30 at 5.21.44 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675139_hju1ru5.jpeg",
+      "order": 16
+    },
+    {
+      "id": "photo_1782820675149_vx4pum3",
+      "name": "WhatsApp Image 2026-06-30 at 5.21.26 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675149_vx4pum3.jpeg",
+      "order": 17
+    },
+    {
+      "id": "photo_1782820675156_1ayrj0q",
+      "name": "WhatsApp Image 2026-06-30 at 5.21.19 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675156_1ayrj0q.jpeg",
+      "order": 18
+    },
+    {
+      "id": "photo_1782820675162_udcwql3",
+      "name": "WhatsApp Image 2026-06-30 at 5.21.24 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675162_udcwql3.jpeg",
+      "order": 19
+    },
+    {
+      "id": "photo_1782820675172_bb5du9l",
+      "name": "WhatsApp Image 2026-06-30 at 5.18.34 PM (1).jpeg",
+      "path": "/content/photos/photo_photo_1782820675172_bb5du9l.jpeg",
+      "order": 20
+    },
+    {
+      "id": "photo_1782820675181_g56v59v",
+      "name": "WhatsApp Image 2026-06-30 at 5.18.39 PM (1).jpeg",
+      "path": "/content/photos/photo_photo_1782820675181_g56v59v.jpeg",
+      "order": 21
+    },
+    {
+      "id": "photo_1782820675188_ewyprjb",
+      "name": "WhatsApp Image 2026-06-30 at 5.19.28 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675188_ewyprjb.jpeg",
+      "order": 22
+    },
+    {
+      "id": "photo_1782820675195_1fe750q",
+      "name": "WhatsApp Image 2026-06-30 at 5.20.16 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675195_1fe750q.jpeg",
+      "order": 23
+    },
+    {
+      "id": "photo_1782820675203_32k1p66",
+      "name": "WhatsApp Image 2026-06-30 at 5.20.26 PM.jpeg",
+      "path": "/content/photos/photo_photo_1782820675203_32k1p66.jpeg",
+      "order": 24
+    }
+  ],
+  "video": {
+    "name": "birthday video.mp4",
+    "path": "/content/videos/birthday-film.m4a"
+  },
+  "music": {
+    "name": "Ricky_Montgomery_-_Line_Without_a_Hook_(mp3.pm).mp3",
+    "path": "/content/music/theme.mp3"
+  },
+  "lastUpdated": "2026-06-30T19:18:28.937Z"
+}

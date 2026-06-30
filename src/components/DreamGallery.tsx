@@ -103,14 +103,18 @@ export default function DreamGallery({
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
 
-  // Convert binary Blobs to URL streams cleanly
+  // Convert binary Blobs or use paths cleanly
   useEffect(() => {
-    const urls = photos.map((p) => URL.createObjectURL(p.blob));
+    const urls = photos.map((p) => p.blob ? URL.createObjectURL(p.blob) : (p.path || ''));
     setPhotoUrls(urls);
 
     // Garbage collection: revoke Blob URLs to prevent memory leaks
     return () => {
-      urls.forEach((url) => URL.revokeObjectURL(url));
+      urls.forEach((url) => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
+      });
     };
   }, [photos]);
 

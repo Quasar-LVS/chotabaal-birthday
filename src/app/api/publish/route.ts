@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
-// File Paths
-const CONTENT_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), 'src', 'content');
-const CONFIG_FILE = path.join(CONTENT_DIR, 'published-config.json');
+// Reorganized file paths inside public/content/
+const CONTENT_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'content');
+const CONFIG_FILE = path.join(CONTENT_DIR, 'content.json');
 
-const PUBLIC_PHOTOS_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'photos');
-const PUBLIC_VIDEOS_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'videos');
-const PUBLIC_MUSIC_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), 'public', 'music');
+const PUBLIC_PHOTOS_DIR = path.join(CONTENT_DIR, 'photos');
+const PUBLIC_VIDEOS_DIR = path.join(CONTENT_DIR, 'videos');
+const PUBLIC_MUSIC_DIR = path.join(CONTENT_DIR, 'music');
 
 // Helper: Ensure directory exists
 const ensureDir = (dirPath: string) => {
@@ -39,7 +39,7 @@ const writeBase64File = (dataUrl: string, destDir: string, baseName: string): st
   return fileName;
 };
 
-// Helper: Clean files in directory written by publish (prefixed files or clean whole folder)
+// Helper: Clean files in directory written by publish
 const cleanDirOfUploadedFiles = (dirPath: string, prefix = 'photo_') => {
   if (!fs.existsSync(dirPath)) return;
   const files = fs.readdirSync(dirPath);
@@ -80,8 +80,7 @@ export async function POST(request: Request) {
 
     ensureDir(CONTENT_DIR);
 
-    // 1. Process Photos
-    // Clean old uploaded photos first to avoid disk bloating
+    // 1. Process Photos under /content/photos/
     cleanDirOfUploadedFiles(PUBLIC_PHOTOS_DIR, 'photo_');
     
     const savedPhotos = [];
@@ -92,34 +91,32 @@ export async function POST(request: Request) {
           savedPhotos.push({
             id: p.id,
             name: p.name,
-            path: `/photos/${fileName}`,
+            path: `/content/photos/${fileName}`,
             order: p.order,
           });
         }
       }
     }
 
-    // 2. Process Video
+    // 2. Process Video under /content/videos/
     let savedVideo = null;
     if (video && video.data && video.data.startsWith('data:')) {
-      // Clean previous wishes films
       cleanDirOfUploadedFiles(PUBLIC_VIDEOS_DIR, 'birthday-film');
       const fileName = writeBase64File(video.data, PUBLIC_VIDEOS_DIR, 'birthday-film');
       savedVideo = {
         name: video.name,
-        path: `/videos/${fileName}`,
+        path: `/content/videos/${fileName}`,
       };
     }
 
-    // 3. Process Music
+    // 3. Process Music under /content/music/
     let savedMusic = null;
     if (music && music.data && music.data.startsWith('data:')) {
-      // Clean previous themes
       cleanDirOfUploadedFiles(PUBLIC_MUSIC_DIR, 'theme');
       const fileName = writeBase64File(music.data, PUBLIC_MUSIC_DIR, 'theme');
       savedMusic = {
         name: music.name,
-        path: `/music/${fileName}`,
+        path: `/content/music/${fileName}`,
       };
     }
 
