@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Trash2, ArrowUp, ArrowDown, Download, RotateCcw, Save, Settings, FileText, Image as ImageIcon, Film, Music } from 'lucide-react';
+import { X, Upload, Trash2, ArrowUp, ArrowDown, Download, RotateCcw, Save, Settings, FileText, Image as ImageIcon, Film, Music, Globe } from 'lucide-react';
 import { PhotoEntry, MediaEntry, TextConfig, savePhoto, deletePhoto, saveVideo, deleteVideo, saveMusic, deleteMusic, saveTextConfig, resetDB } from '@/utils/db';
 
 interface CreatorPanelProps {
@@ -10,6 +10,7 @@ interface CreatorPanelProps {
   photos: PhotoEntry[];
   video: MediaEntry | null;
   music: MediaEntry | null;
+  lastUpdated: string | null;
   onRefreshData: () => void;
   onClose: () => void;
   onTextChange: (newConfig: TextConfig) => void;
@@ -20,12 +21,14 @@ export default function CreatorPanel({
   photos,
   video,
   music,
+  lastUpdated,
   onRefreshData,
   onClose,
   onTextChange,
 }: CreatorPanelProps) {
   const [activeTab, setActiveTab] = useState<'photos' | 'video' | 'music' | 'text' | 'system'>('photos');
   const [isUploading, setIsUploading] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
   const [logMessage, setLogMessage] = useState('');
 
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -37,6 +40,54 @@ export default function CreatorPanel({
   const triggerLog = (msg: string) => {
     setLogMessage(msg);
     setTimeout(() => setLogMessage(''), 4000);
+  };
+
+  const handlePublishUniverse = async () => {
+    setIsPublishing(true);
+    triggerLog('Publishing universe to server...');
+    try {
+      const photoPayloads = [];
+      for (const p of photos) {
+        const base64 = await blobToBase64(p.blob);
+        photoPayloads.push({ id: p.id, name: p.name, data: base64, order: p.order });
+      }
+
+      let videoPayload = null;
+      if (video) {
+        const base64 = await blobToBase64(video.blob);
+        videoPayload = { name: video.name, data: base64 };
+      }
+
+      let musicPayload = null;
+      if (music) {
+        const base64 = await blobToBase64(music.blob);
+        musicPayload = { name: music.name, data: base64 };
+      }
+
+      const response = await fetch('/api/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          textConfig,
+          photos: photoPayloads,
+          video: videoPayload,
+          music: musicPayload,
+        })
+      });
+
+      const resData = await response.json();
+      if (resData.success) {
+        triggerLog('Universe published successfully! Live on all devices.');
+        onRefreshData();
+      } else {
+        triggerLog('Publish failed: ' + (resData.error || 'Server error'));
+      }
+    } catch (e) {
+      console.error(e);
+      triggerLog('Failed to publish configuration.');
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   // Helper: convert Blob to base64 for JSON serialization
@@ -568,6 +619,29 @@ export default function CreatorPanel({
             <h4 className="font-serif italic text-dream-pink text-base font-medium">Backup & Maintenance</h4>
             
             <div className="space-y-4">
+              {/* Publish Button */}
+              <button
+                disabled={isPublishing}
+                onClick={handlePublishUniverse}
+                className="w-full py-3.5 hover:opacity-90 text-dusty-plum text-xs uppercase tracking-widest font-bold rounded-2xl border border-sakura/50 cursor-pointer flex items-center justify-center gap-2 shadow-md disabled:opacity-40 transition-all"
+                style={{ backgroundColor: '#E8B7C8' }}
+              >
+                {isPublishing ? (
+                  <div className="w-4 h-4 border-2 border-dusty-plum border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <Globe className="w-4 h-4 text-dusty-plum" />
+                )}
+                <span>Publish My Universe</span>
+              </button>
+
+              {lastUpdated && (
+                <div className="text-[9px] uppercase tracking-wider text-dusty-plum/50 text-center font-mono select-none">
+                  Last Published: {new Date(lastUpdated).toLocaleString()}
+                </div>
+              )}
+
+              <div className="h-[1px] bg-sakura/20 my-4" />
+
               {/* Export Button */}
               <button
                 onClick={handleExportBackup}

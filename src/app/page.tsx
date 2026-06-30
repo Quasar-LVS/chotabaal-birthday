@@ -17,7 +17,7 @@ import DreamGallery from '@/components/DreamGallery';
 import CinemaRoom from '@/components/CinemaRoom';
 import FinalScreen from '@/components/FinalScreen';
 
-import { TextConfig, PhotoEntry, MediaEntry, getTextConfig, getPhotos, getVideo, getMusic, saveTextConfig, DEFAULT_TEXT_CONFIG } from '@/utils/db';
+import { TextConfig, PhotoEntry, MediaEntry, getTextConfig, getPhotos, getVideo, getMusic, saveTextConfig, savePhoto, saveVideo, saveMusic, DEFAULT_TEXT_CONFIG } from '@/utils/db';
 
 const SECTIONS = [
   { id: 'hero', key: 'hero' as const },
@@ -36,23 +36,87 @@ export default function Home() {
   const [photos, setPhotos] = useState<PhotoEntry[]>([]);
   const [video, setVideo] = useState<MediaEntry | null>(null);
   const [music, setMusic] = useState<MediaEntry | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [isDbLoading, setIsDbLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
 
-  // Load IndexedDB contents on mount
+  // Load backend published universe data and IndexedDB contents
   const loadUniverseData = async () => {
     try {
-      const config = await getTextConfig();
-      const photoList = await getPhotos();
-      const videoData = await getVideo();
-      const musicData = await getMusic();
+      // 1. Fetch server config
+      const serverRes = await fetch('/api/publish')
+        .then((r) => r.json())
+        .catch(() => ({ success: false }));
 
-      setTextConfig(config);
-      setPhotos(photoList);
-      setVideo(videoData);
-      setMusic(musicData);
+      const localPhotos = await getPhotos();
+      const localConfig = await getTextConfig();
+      const localVideo = await getVideo();
+      const localMusic = await getMusic();
+
+      if (serverRes.success) {
+        setLastUpdated(serverRes.lastUpdated);
+
+        // If local IndexedDB has no custom elements yet, sync server published items into IndexedDB
+        if (localPhotos.length === 0 && !localVideo && !localMusic) {
+          console.log('Syncing server published assets into IndexedDB...');
+          // Save Text config
+          await saveTextConfig(serverRes.textConfig);
+
+          // Save Photos
+          if (serverRes.photos && Array.isArray(serverRes.photos)) {
+            for (const p of serverRes.photos) {
+              const res = await fetch(p.path).catch(() => null);
+              if (res) {
+                const blob = await res.blob();
+                await savePhoto(p.id, p.name, blob, p.order);
+              }
+            }
+          }
+
+          // Save Wishes Video
+          if (serverRes.video) {
+            const res = await fetch(serverRes.video.path).catch(() => null);
+            if (res) {
+              const blob = await res.blob();
+              await saveVideo(blob, serverRes.video.name);
+            }
+          }
+
+          // Save Theme soundtrack
+          if (serverRes.music) {
+            const res = await fetch(serverRes.music.path).catch(() => null);
+            if (res) {
+              const blob = await res.blob();
+              await saveMusic(blob, serverRes.music.name);
+            }
+          }
+
+          // Reload states after sync
+          const syncedPhotos = await getPhotos();
+          const syncedConfig = await getTextConfig();
+          const syncedVideo = await getVideo();
+          const syncedMusic = await getMusic();
+
+          setTextConfig(syncedConfig);
+          setPhotos(syncedPhotos);
+          setVideo(syncedVideo);
+          setMusic(syncedMusic);
+        } else {
+          // IndexedDB has local data, keep using local draft workspace
+          setTextConfig(localConfig);
+          setPhotos(localPhotos);
+          setVideo(localVideo);
+          setMusic(localMusic);
+        }
+      } else {
+        // No server configuration yet, use standard local workspace
+        setTextConfig(localConfig);
+        setPhotos(localPhotos);
+        setVideo(localVideo);
+        setMusic(localMusic);
+      }
     } catch (e) {
-      console.error('Failed to initialize IndexedDB:', e);
+      console.error('Failed to initialize state configs:', e);
     } finally {
       setIsDbLoading(false);
     }
@@ -168,6 +232,7 @@ export default function Home() {
                   photos={photos}
                   video={video}
                   music={music}
+                  lastUpdated={lastUpdated}
                   onRefreshData={loadUniverseData}
                   onClose={() => setEditMode(false)}
                   onTextChange={handleTextConfigSave}
